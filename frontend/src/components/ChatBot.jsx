@@ -29,7 +29,8 @@ export default function ChatBot({ policyId }) {
     setIsLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:8000/qa/ask', {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await axios.post(`${API_URL}/qa/ask`, {
         policy_id: policyId,
         question: userMsg
       });

@@ -47,7 +47,8 @@ export default function PDFUploader({ onUploadSuccess }) {
     
     try {
       // Assuming backend is running on 8000
-      const response = await axios.post('http://localhost:8000/policies/upload', formData, {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await axios.post(`${API_URL}/policies/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       setStatus('processing');

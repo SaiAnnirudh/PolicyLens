@@ -23,7 +23,8 @@ export default function Dashboard() {
         try {
             const decoded = jwtDecode(token);
             const userId = decoded.id;
-            const ws = new WebSocket(`ws://localhost:8000/ws/notifications/${userId}`);
+            const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
+            const ws = new WebSocket(`${WS_URL}/ws/notifications/${userId}`);
             
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
@@ -43,7 +44,8 @@ export default function Dashboard() {
 
   const fetchPolicies = async () => {
     try {
-      const res = await axios.get('http://localhost:8000/policies/mine');
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const res = await axios.get(`${API_URL}/policies/mine`);
       setPolicies(res.data);
       if (res.data.length > 0 && !selectedPolicyId) {
         setSelectedPolicyId(res.data[0].id);

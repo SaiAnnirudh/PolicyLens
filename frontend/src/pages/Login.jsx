@@ -22,21 +22,25 @@ export default function Login() {
     
     try {
       if (mode === 'signup') {
-        const res = await axios.post('http://localhost:8000/auth/signup', { email, password });
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const res = await axios.post(`${API_URL}/auth/signup`, { email, password });
         localStorage.setItem('token', res.data.access_token);
         navigate('/');
       } else if (mode === 'login') {
-        const res = await axios.post('http://localhost:8000/auth/login', { email, password });
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const res = await axios.post(`${API_URL}/auth/login`, { email, password });
         localStorage.setItem('token', res.data.access_token);
         navigate('/');
       } else if (mode === 'otp') {
         if (!otp) {
           // Request OTP
-          await axios.post('http://localhost:8000/auth/request-otp', { email });
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+          await axios.post(`${API_URL}/auth/request-otp`, { email });
           setMsg('OTP sent to your email!');
         } else {
           // Verify OTP
-          const res = await axios.post('http://localhost:8000/auth/verify-otp', { email, code: otp });
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+          const res = await axios.post(`${API_URL}/auth/verify-otp`, { email, code: otp });
           localStorage.setItem('token', res.data.access_token);
           navigate('/');
         }

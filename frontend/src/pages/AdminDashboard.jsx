@@ -12,7 +12,8 @@ export default function AdminDashboard() {
 
   const fetchClaims = async () => {
     try {
-      const res = await axios.get('http://localhost:8000/admin/claims');
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const res = await axios.get(`${API_URL}/admin/claims`);
       setClaims(res.data.claims);
     } catch (err) {
       console.error('Failed to fetch claims', err);
@@ -23,7 +24,8 @@ export default function AdminDashboard() {
 
   const handleUpdateStatus = async (claimId, newStatus) => {
     try {
-      await axios.post(`http://localhost:8000/admin/claims/${claimId}/status`, {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      await axios.post(`${API_URL}/admin/claims/${claimId}/status`, {
         status: newStatus
       });
       fetchClaims();

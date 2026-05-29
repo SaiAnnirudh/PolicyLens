@@ -20,7 +20,8 @@ export default function ClaimsWizard({ policyId, onClose }) {
         form.append('file', formData.file);
       }
       
-      const response = await axios.post('http://localhost:8000/claims/predict', form, {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await axios.post(`${API_URL}/claims/predict`, form, {
         headers: {
             'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -38,7 +39,8 @@ export default function ClaimsWizard({ policyId, onClose }) {
   const handleFileClaim = async () => {
     setIsLoading(true);
     try {
-      await axios.post('http://localhost:8000/claims/file', {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      await axios.post(`${API_URL}/claims/file`, {
         policy_id: policyId,
         claim_type: formData.claim_type,
         amount: parseFloat(formData.amount)
