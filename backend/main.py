@@ -17,6 +17,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from routes import auth, policies, claims, qa
+
+app.include_router(auth.router)
+app.include_router(policies.router)
+app.include_router(claims.router)
+app.include_router(qa.router)
+
 @app.get("/health")
 def health_check():
     return {"status": "ok", "message": "Insurance API is running"}
