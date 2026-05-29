@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database with pgvector extension
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: insurance_db
+    restart: always
+    environment:
+      POSTGRES_USER: insurance_user
+      POSTGRES_PASSWORD: insurance_password
+      POSTGRES_DB: insurance_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Redis for Task Queue & Caching
+  redis:
+    image: redis:alpine
+    container_name: insurance_redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  # Backend (FastAPI) - Placeholder for now
+  # backend:
+  #   build: ./backend
+  #   container_name: insurance_backend
+  #   ports:
+  #     - "8000:8000"
+  #   depends_on:
+  #     - db
+  #     - redis
+  #   environment:
+  #     - DATABASE_URL=postgresql://insurance_user:insurance_password@db:5432/insurance_db
+  #     - REDIS_URL=redis://redis:6379/0
+
+  # Frontend (React) - Placeholder for now
+  # frontend:
+  #   build: ./frontend
+  #   container_name: insurance_frontend
+  #   ports:
+  #     - "5173:5173"
+  #   depends_on:
+  #     - backend
+
+volumes:
+  postgres_data:
