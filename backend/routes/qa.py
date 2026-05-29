@@ -71,6 +71,18 @@ def ask_question(request: QuestionRequest, db: Session = Depends(get_db)):
     Answer the user's question accurately based ONLY on the provided policy clauses.
     If the answer is not in the clauses, state that you cannot find the information in the policy.
     
+    SPECIAL INSTRUCTION:
+    If the user is asking to FILE A CLAIM (e.g. "File a claim for $500", "I want to claim $300 for dental"), 
+    you must output EXACTLY the following JSON format and nothing else:
+    ```json
+    {{
+      "action": "file_claim",
+      "amount": <number>,
+      "claim_type": "<string e.g. hospitalization, dental, pharmacy>"
+    }}
+    ```
+    If it's just a regular question, simply answer the question normally without JSON.
+    
     POLICY CLAUSES:
     {context}
     
@@ -78,15 +90,53 @@ def ask_question(request: QuestionRequest, db: Session = Depends(get_db)):
     """
     
     try:
+        from routes.auth import get_current_user
         client = genai.Client(api_key=gemini_api_key)
         response = client.models.generate_content(
             model='gemini-2.5-flash',
             contents=prompt,
         )
-        answer = response.text
+        answer = response.text.strip()
+        
+        # Check if it's an action
+        if answer.startswith("```json") and "file_claim" in answer:
+            import json
+            import uuid
+            from models.schema import Claim, ClaimStatus
+            from services.ml_model import feature_engineering, predict_claim_approval
+            
+            clean_json = answer.replace("```json", "").replace("```", "").strip()
+            data = json.loads(clean_json)
+            
+            # Fetch policy and user
+            policy = db.query(Policy).filter(Policy.id == uuid.UUID(request.policy_id)).first()
+            if policy:
+                # Mock a claim creation
+                features = feature_engineering({"amount": data["amount"], "type": data.get("claim_type", "unknown")}, policy.extracted_data or {})
+                prediction = predict_claim_approval(features)
+                
+                new_claim = Claim(
+                    id=uuid.uuid4(),
+                    user_id=policy.user_id,
+                    policy_id=policy.id,
+                    claim_type=data.get("claim_type", "unknown"),
+                    claimed_amount=data["amount"],
+                    predicted_approval_score=prediction.get("approval_probability"),
+                    missing_docs=prediction.get("missing_documents", []),
+                    status=ClaimStatus.FILED
+                )
+                db.add(new_claim)
+                db.commit()
+                answer = f"✅ I have successfully filed your claim for ${data['amount']} ({data.get('claim_type')}). The predicted approval score is {prediction.get('approval_probability')}%. You can view it in your dashboard."
+            else:
+                answer = "I tried to file a claim, but couldn't find your policy."
+                
     except Exception as e:
         print(f"Gemini API error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to generate answer from LLM")
+        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+            answer = "⚠️ **API Quota Exceeded:** The provided Gemini API key has run out of free-tier requests (Limit: 20/day or 15/min). Please try again later or upgrade your API key in Google AI Studio."
+        else:
+            answer = "⚠️ **Error:** I encountered an issue analyzing your policy. Please check the API key configuration."
         
     return {
         "question": request.question,

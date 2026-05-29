@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { UploadCloud, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import axios from 'axios';
 
-export default function PDFUploader() {
+export default function PDFUploader({ onUploadSuccess }) {
   const [dragActive, setDragActive] = useState(false);
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState('idle'); // idle, uploading, processing, complete, error
@@ -34,21 +34,16 @@ export default function PDFUploader() {
     }
   };
 
-  const handleFile = (selectedFile) => {
+  const handleFile = async (selectedFile) => {
     if (selectedFile.type !== 'application/pdf') {
       setStatus('error');
       return;
     }
     setFile(selectedFile);
-    setStatus('idle');
-  };
-
-  const uploadFile = async () => {
-    if (!file) return;
     setStatus('uploading');
     
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', selectedFile);
     
     try {
       // Assuming backend is running on 8000
@@ -57,7 +52,12 @@ export default function PDFUploader() {
       });
       setStatus('processing');
       // In a real app, we would poll or listen to websockets here
-      setTimeout(() => setStatus('complete'), 2000);
+      setTimeout(() => {
+        setStatus('complete');
+        if (onUploadSuccess && response.data.policy_id) {
+          onUploadSuccess(response.data.policy_id);
+        }
+      }, 2000);
     } catch (err) {
       console.error(err);
       setStatus('error');

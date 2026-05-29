@@ -12,10 +12,19 @@ export default function ClaimsWizard({ policyId, onClose }) {
     if (!formData.amount) return;
     setIsLoading(true);
     try {
-      const response = await axios.post('http://localhost:8000/claims/predict', {
-        policy_id: policyId,
-        claim_type: formData.claim_type,
-        amount: parseFloat(formData.amount)
+      const form = new FormData();
+      form.append('policy_id', policyId);
+      form.append('claim_type', formData.claim_type);
+      form.append('amount', formData.amount);
+      if (formData.file) {
+        form.append('file', formData.file);
+      }
+      
+      const response = await axios.post('http://localhost:8000/claims/predict', form, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
       });
       setPrediction(response.data.prediction);
       setStep(2);
@@ -33,6 +42,10 @@ export default function ClaimsWizard({ policyId, onClose }) {
         policy_id: policyId,
         claim_type: formData.claim_type,
         amount: parseFloat(formData.amount)
+      }, {
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
       });
       setStep(3);
     } catch (err) {
@@ -77,6 +90,16 @@ export default function ClaimsWizard({ policyId, onClose }) {
                   value={formData.amount}
                   onChange={e => setFormData({...formData, amount: e.target.value})}
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Hospital Bill / Receipt (Optional)</label>
+                <input 
+                  type="file" 
+                  accept="image/*,.pdf"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-4 py-2 text-slate-900 focus:ring-2 focus:ring-brand-500 outline-none"
+                  onChange={e => setFormData({...formData, file: e.target.files[0]})}
+                />
+                <p className="text-xs text-slate-500 mt-1">Upload your bill for AI verification against policy constraints.</p>
               </div>
             </div>
           )}

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2, Sparkles } from 'lucide-react';
 import axios from 'axios';
+import ReactMarkdown from 'react-markdown';
 
 export default function ChatBot({ policyId }) {
   const [messages, setMessages] = useState([
@@ -69,13 +70,25 @@ export default function ChatBot({ policyId }) {
               {msg.role === 'user' ? <User className="w-4 h-4 text-slate-600" /> : <Bot className="w-4 h-4 text-white" />}
             </div>
             <div className={`max-w-[80%] rounded-2xl p-3 text-sm ${msg.role === 'user' ? 'bg-slate-100 text-slate-800 rounded-tr-none' : 'bg-brand-50 text-slate-800 rounded-tl-none border border-brand-100'}`}>
-              <p className="whitespace-pre-wrap">{msg.content}</p>
-              {msg.sources && (
+              <div className="prose prose-sm prose-slate max-w-none">
+                {msg.role === 'user' ? (
+                  <p className="whitespace-pre-wrap m-0">{msg.content}</p>
+                ) : (
+                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+                )}
+              </div>
+              {msg.sources && msg.sources.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-brand-200/50">
-                  <p className="text-xs font-semibold text-brand-700 mb-1">Sources retrieved from policy:</p>
-                  <ul className="text-xs text-slate-500 space-y-1 list-disc pl-4">
-                    {msg.sources.map((src, i) => <li key={i}>{src}</li>)}
-                  </ul>
+                  <details className="group cursor-pointer">
+                    <summary className="text-xs font-semibold text-brand-700 flex items-center gap-1 select-none">
+                      <span className="group-open:hidden">▶</span>
+                      <span className="hidden group-open:inline">▼</span>
+                      View {msg.sources.length} sources retrieved from policy
+                    </summary>
+                    <ul className="text-xs text-slate-500 space-y-1 list-disc pl-4 mt-2">
+                      {msg.sources.map((src, i) => <li key={i}>{src}</li>)}
+                    </ul>
+                  </details>
                 </div>
               )}
             </div>
