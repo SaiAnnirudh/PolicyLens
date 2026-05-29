@@ -6,17 +6,11 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from database import get_db
 from models.schema import Policy, PolicyClause, User
-from sentence_transformers import SentenceTransformer
 from routes.auth import get_current_user
 
 router = APIRouter(prefix="/policies", tags=["policies"])
 
-# In MVP, we can load it here (singleton)
-try:
-    embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-except Exception as e:
-    print(f"Failed to load sentence-transformers: {e}")
-    embedding_model = None
+# Removed sentence-transformers in favor of Gemini embeddings
 
 @router.post("/upload")
 async def upload_policy(
@@ -103,21 +97,29 @@ async def upload_policy(
     db.add(policy)
     
     # 2. Chunk text and images into clauses and embed
-    if embedding_model:
+    if 'client' in locals() and client:
         # Simple chunking by paragraph
         paragraphs = [p.strip() for p in extracted_text.split('\n\n') if len(p.strip()) > 15]
         
         # Combine text chunks and image descriptions
         all_chunks = paragraphs + images_descriptions
         
-        for p in all_chunks:
-            emb = embedding_model.encode(p).tolist()
-            clause = PolicyClause(
-                policy_id=policy_id,
-                clause_text=p,
-                embedding=emb
-            )
-            db.add(clause)
+        try:
+            for p in all_chunks:
+                # Use Gemini Embeddings
+                emb_res = client.models.embed_content(
+                    model="text-embedding-004",
+                    contents=p
+                )
+                emb = emb_res.embeddings[0].values
+                clause = PolicyClause(
+                    policy_id=policy_id,
+                    clause_text=p,
+                    embedding=emb
+                )
+                db.add(clause)
+        except Exception as e:
+            print(f"Failed to embed chunks: {e}")
             
     db.commit()
     
@@ -128,7 +130,17 @@ async def upload_policy(
         
         # Search the Vector DB for coverage and extraction-related info
         search_query = "What is the total coverage amount, deductible, exclusions, insurer name, and policy type?"
-        q_emb = embedding_model.encode(search_query).tolist()
+        
+        q_emb = None
+        if 'client' in locals() and client:
+            emb_res = client.models.embed_content(
+                model="text-embedding-004",
+                contents=search_query
+            )
+            q_emb = emb_res.embeddings[0].values
+        
+        if not q_emb:
+            raise Exception("No embedding generated for query")
         
         res = db.execute(sa_text("""
             SELECT clause_text 

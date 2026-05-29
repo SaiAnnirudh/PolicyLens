@@ -12,9 +12,5 @@ celery
 redis
 pdfplumber
 pymupdf
-spacy
-sentence-transformers
-xgboost
-scikit-learn
 google-genai
 python-dotenv

@@ -6,16 +6,9 @@ from sqlalchemy import text
 from database import get_db
 from models.schema import Policy, PolicyClause
 from google import genai
-from sentence_transformers import SentenceTransformer
+# Removed sentence-transformers in favor of Gemini embeddings
 
 router = APIRouter(prefix="/qa", tags=["qa"])
-
-# Initialize models (in a real app, this should be done at startup)
-try:
-    embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-except Exception as e:
-    print(f"Failed to load sentence-transformers: {e}")
-    embedding_model = None
 
 class QuestionRequest(BaseModel):
     policy_id: str
@@ -30,11 +23,15 @@ def ask_question(request: QuestionRequest, db: Session = Depends(get_db)):
     if not gemini_api_key or gemini_api_key == "your_gemini_api_key_here":
         raise HTTPException(status_code=500, detail="GEMINI_API_KEY is not configured")
         
-    if not embedding_model:
-        raise HTTPException(status_code=500, detail="Embedding model not initialized")
+        
+    client = genai.Client(api_key=gemini_api_key)
 
     # 1. Generate embedding for the question
-    question_embedding = embedding_model.encode(request.question).tolist()
+    emb_res = client.models.embed_content(
+        model="text-embedding-004",
+        contents=request.question
+    )
+    question_embedding = emb_res.embeddings[0].values
     
     # 2. Retrieve top 5 semantically similar clauses from pgvector
     # Using L2 distance (<->) or inner product (<#>) or cosine distance (<=>)

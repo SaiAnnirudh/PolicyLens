@@ -55,7 +55,7 @@ class PolicyClause(Base):
     policy_id = Column(UUID(as_uuid=True), ForeignKey("policies.id"), nullable=False)
     clause_text = Column(String, nullable=False)
     clause_type = Column(String, nullable=True) # e.g. "coverage", "exclusion"
-    embedding = Column(Vector(384)) # Using all-MiniLM-L6-v2 which outputs 384 dimensions
+    embedding = Column(Vector(768)) # Using Gemini text-embedding-004 which outputs 768 dimensions
 
 class Claim(Base):
     __tablename__ = "claims"
