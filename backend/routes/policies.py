@@ -55,10 +55,16 @@ async def upload_policy(
                 # 2. Extract Images (Multi-modal)
                 if client:
                     image_list = page.get_images(full=True)
+                    import time
                     for img_index, img in enumerate(image_list):
                         try:
                             xref = img[0]
                             base_image = doc.extract_image(xref)
+                            
+                            # Filter out tiny logos and bullet point icons to save API quota
+                            if base_image["width"] < 100 or base_image["height"] < 100:
+                                continue
+                                
                             image_bytes = base_image["image"]
                             image_ext = base_image["ext"]
                             
@@ -76,6 +82,9 @@ async def upload_policy(
                             )
                             if response.text:
                                 images_descriptions.append(response.text)
+                                
+                            # Sleep for 2 seconds to avoid Gemini's free tier 15 RPM limit
+                            time.sleep(2)
                         except Exception as img_e:
                             print(f"Failed to extract/describe image {img_index} on page {page_num}: {img_e}")
                             
