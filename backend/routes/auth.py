@@ -77,14 +77,16 @@ def send_otp_email(to_email: str, code: str):
     msg['To'] = to_email
 
     try:
-        # Assuming Gmail SMTP for this MVP
-        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        print(f"Attempting to send email to {to_email} via smtp.gmail.com:587...")
+        # Use port 587 with starttls (more reliable on cloud hosts like Railway)
+        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=10)
+        server.starttls()
         server.login(smtp_email, smtp_password)
         server.send_message(msg)
         server.quit()
+        print(f"Successfully sent OTP email to {to_email}")
     except Exception as e:
-        print(f"Failed to send email: {e}")
-        raise HTTPException(status_code=500, detail="Failed to send OTP email")
+        print(f"Failed to send email: {e}", flush=True)
 
 @router.post("/signup", response_model=Token)
 def signup(user: UserCreate, db: Session = Depends(get_db)):
