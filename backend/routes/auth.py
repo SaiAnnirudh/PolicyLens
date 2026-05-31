@@ -1,5 +1,6 @@
 import os
-import smtplib
+import json
+import urllib.request
 import random
 from email.message import EmailMessage
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
@@ -63,30 +64,34 @@ def create_access_token(data: dict):
     return encoded_jwt
 
 def send_otp_email(to_email: str, code: str):
-    smtp_email = os.getenv("SMTP_EMAIL")
-    smtp_password = os.getenv("SMTP_PASSWORD")
+    resend_api_key = os.getenv("RESEND_API_KEY")
     
-    if not smtp_email or not smtp_password:
+    if not resend_api_key:
         print(f"MOCK EMAIL TO {to_email}: Your OTP code is {code}")
         return
         
-    msg = EmailMessage()
-    msg.set_content(f"Your PolicyLens login code is: {code}\nThis code expires in 10 minutes.")
-    msg['Subject'] = "Your Login OTP"
-    msg['From'] = smtp_email
-    msg['To'] = to_email
-
+    print(f"Attempting to send email to {to_email} via Resend API...")
+    
+    url = "https://api.resend.com/emails"
+    headers = {
+        "Authorization": f"Bearer {resend_api_key}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        # Resend's free tier requires you to use their onboarding domain
+        "from": "PolicyLens <onboarding@resend.dev>",
+        "to": [to_email],
+        "subject": "Your Login OTP",
+        "text": f"Your PolicyLens login code is: {code}\nThis code expires in 10 minutes."
+    }
+    
+    req = urllib.request.Request(url, data=json.dumps(data).encode('utf-8'), headers=headers, method='POST')
+    
     try:
-        print(f"Attempting to send email to {to_email} via smtp.gmail.com:587...")
-        # Use port 587 with starttls (more reliable on cloud hosts like Railway)
-        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=10)
-        server.starttls()
-        server.login(smtp_email, smtp_password)
-        server.send_message(msg)
-        server.quit()
-        print(f"Successfully sent OTP email to {to_email}")
+        with urllib.request.urlopen(req, timeout=10) as response:
+            print(f"Successfully sent OTP email to {to_email} via Resend")
     except Exception as e:
-        print(f"Failed to send email: {e}", flush=True)
+        print(f"Failed to send email via Resend: {e}", flush=True)
 
 @router.post("/signup", response_model=Token)
 def signup(user: UserCreate, db: Session = Depends(get_db)):
