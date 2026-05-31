@@ -90,6 +90,9 @@ def send_otp_email(to_email: str, code: str):
     try:
         with urllib.request.urlopen(req, timeout=10) as response:
             print(f"Successfully sent OTP email to {to_email} via Resend")
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode('utf-8')
+        print(f"Failed to send email via Resend: HTTP {e.code} - {error_body}", flush=True)
     except Exception as e:
         print(f"Failed to send email via Resend: {e}", flush=True)
 
