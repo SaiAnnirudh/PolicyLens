@@ -2,7 +2,7 @@ import os
 import smtplib
 import random
 from email.message import EmailMessage
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -115,7 +115,7 @@ def login(user: UserCreate, db: Session = Depends(get_db)):
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/request-otp")
-def request_otp(req: EmailRequest, db: Session = Depends(get_db)):
+def request_otp(req: EmailRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     code = str(random.randint(100000, 999999))
     expires_at = datetime.utcnow() + timedelta(minutes=10)
     
@@ -124,8 +124,8 @@ def request_otp(req: EmailRequest, db: Session = Depends(get_db)):
     db.add(new_otp)
     db.commit()
     
-    # Send email
-    send_otp_email(req.email, code)
+    # Send email in background to prevent API timeout
+    background_tasks.add_task(send_otp_email, req.email, code)
     return {"status": "success", "message": "OTP sent"}
 
 @router.post("/verify-otp", response_model=Token)
