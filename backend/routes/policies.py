@@ -63,10 +63,14 @@ async def upload_policy(
                             image_ext = base_image["ext"]
                             
                             # Ask Gemini to describe the image/table
+                            from google.genai import types
                             response = client.models.generate_content(
                                 model='gemini-2.5-flash',
                                 contents=[
-                                    {"mime_type": f"image/{image_ext}", "data": image_bytes},
+                                    types.Part.from_bytes(
+                                        data=image_bytes,
+                                        mime_type=f"image/{image_ext}",
+                                    ),
                                     "Describe this image in detail. If it's a table, extract all rows and columns. Focus specifically on any numbers, coverage limits, deductibles, and exclusions."
                                 ]
                             )
