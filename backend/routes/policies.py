@@ -121,8 +121,9 @@ async def upload_policy(
             for p in all_chunks:
                 # Use Gemini Embeddings
                 emb_res = client.models.embed_content(
-                    model="text-embedding-004",
-                    contents=p
+                    model="gemini-embedding-2",
+                    contents=p,
+                    config={"output_dimensionality": 768}
                 )
                 emb = emb_res.embeddings[0].values
                 clause = PolicyClause(
@@ -147,8 +148,9 @@ async def upload_policy(
         q_emb = None
         if 'client' in locals() and client:
             emb_res = client.models.embed_content(
-                model="text-embedding-004",
-                contents=search_query
+                model="gemini-embedding-2",
+                contents=search_query,
+                config={"output_dimensionality": 768}
             )
             q_emb = emb_res.embeddings[0].values
         

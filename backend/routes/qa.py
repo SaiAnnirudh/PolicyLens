@@ -28,8 +28,9 @@ def ask_question(request: QuestionRequest, db: Session = Depends(get_db)):
 
     # 1. Generate embedding for the question
     emb_res = client.models.embed_content(
-        model="text-embedding-004",
-        contents=request.question
+        model="gemini-embedding-2",
+        contents=request.question,
+        config={"output_dimensionality": 768}
     )
     question_embedding = emb_res.embeddings[0].values
     
