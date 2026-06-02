@@ -93,7 +93,7 @@ export default function Dashboard() {
                 {policies.map((p, idx) => {
                   const name = p.extracted_data?.insurer || p.extracted_data?.policy_type ? 
                     `${p.extracted_data?.insurer || ''} ${p.extracted_data?.policy_type || ''}`.trim() : 
-                    `Policy ${idx + 1}`;
+                    p.filename ? p.filename : `Policy ${idx + 1}`;
                   return (
                     <option key={p.id} value={p.id}>
                       {name} ({new Date(p.uploaded_at).toLocaleDateString()})

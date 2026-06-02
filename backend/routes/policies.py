@@ -52,45 +52,9 @@ async def upload_policy(
                     text = re.sub(r'(?m)^\s*[C|o|•|·]\s+', '- ', text)
                     text = re.sub(r' C ', ' ', text)
                     extracted_text += text + "\n"
-                    
-                # 2. Extract Images (Multi-modal)
-                if client:
-                    image_list = page.get_images(full=True)
-                    import time
-                    for img_index, img in enumerate(image_list):
-                        if processed_images >= 10:
-                            break # Cap at 10 images total to prevent Railway timeout
-                        try:
-                            xref = img[0]
-                            base_image = doc.extract_image(xref)
-                            
-                            # Filter out tiny logos and bullet point icons to save API quota
-                            if base_image["width"] < 100 or base_image["height"] < 100:
-                                continue
-                                
-                            image_bytes = base_image["image"]
-                            image_ext = base_image["ext"]
-                            
-                            # Ask Gemini to describe the image/table
-                            from google.genai import types
-                            response = client.models.generate_content(
-                                model='gemini-2.5-flash',
-                                contents=[
-                                    types.Part.from_bytes(
-                                        data=image_bytes,
-                                        mime_type=f"image/{image_ext}",
-                                    ),
-                                    "Describe this image in detail. If it's a table, extract all rows and columns. Focus specifically on any numbers, coverage limits, deductibles, and exclusions."
-                                ]
-                            )
-                            if response.text:
-                                images_descriptions.append(response.text)
-                                
-                            processed_images += 1
-                            # Sleep for 2 seconds to avoid Gemini's free tier 15 RPM limit
-                            time.sleep(2)
-                        except Exception as img_e:
-                            print(f"Failed to extract/describe image {img_index} on page {page_num}: {img_e}")
+                # 2. Image Extraction
+                # Removed to prevent LLM quota exhaustion on the free tier (15 RPM).
+                # The text extraction is sufficient for policy analysis.
                             
     except Exception as e:
         os.remove(tmp_path)
@@ -109,7 +73,8 @@ async def upload_policy(
         id=policy_id,
         user_id=current_user.id,
         policy_text=extracted_text,
-        extracted_data={}
+        extracted_data={},
+        filename=file.filename
     )
     db.add(policy)
     
@@ -219,7 +184,7 @@ async def upload_policy(
 @router.get("/mine")
 def get_my_policies(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     policies = db.query(Policy).filter(Policy.user_id == current_user.id).order_by(Policy.uploaded_at.desc()).all()
-    return [{"id": str(p.id), "uploaded_at": p.uploaded_at, "extracted_data": p.extracted_data} for p in policies]
+    return [{"id": str(p.id), "uploaded_at": p.uploaded_at, "extracted_data": p.extracted_data, "filename": p.filename} for p in policies]
 
 @router.get("/{policy_id}/extract")
 def get_extracted_policy(policy_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):

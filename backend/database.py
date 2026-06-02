@@ -26,6 +26,10 @@ from sqlalchemy import text
 try:
     with engine.connect() as conn:
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+        try:
+            conn.execute(text("ALTER TABLE policies ADD COLUMN filename VARCHAR"))
+        except Exception:
+            pass # Column already exists
         conn.commit()
     Base.metadata.create_all(bind=engine)
     print("Database tables and pgvector extension initialized successfully.")

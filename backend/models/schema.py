@@ -43,6 +43,7 @@ class Policy(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     policy_text = Column(String, nullable=False)
     policy_type = Column(Enum(PolicyType), nullable=True)
+    filename = Column(String, nullable=True)
     extracted_data = Column(JSONB, nullable=True) # coverage, deductible, exclusions
     s3_url = Column(String, nullable=True)
     uploaded_at = Column(DateTime, default=datetime.datetime.utcnow)
