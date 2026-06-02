@@ -44,6 +44,7 @@ async def upload_policy(
             client = genai.Client(api_key=gemini_api_key)
             
         with fitz.open(tmp_path) as doc:
+            processed_images = 0
             for page_num, page in enumerate(doc):
                 # 1. Extract Text
                 text = page.get_text("text")
@@ -57,6 +58,8 @@ async def upload_policy(
                     image_list = page.get_images(full=True)
                     import time
                     for img_index, img in enumerate(image_list):
+                        if processed_images >= 10:
+                            break # Cap at 10 images total to prevent Railway timeout
                         try:
                             xref = img[0]
                             base_image = doc.extract_image(xref)
@@ -83,6 +86,7 @@ async def upload_policy(
                             if response.text:
                                 images_descriptions.append(response.text)
                                 
+                            processed_images += 1
                             # Sleep for 2 seconds to avoid Gemini's free tier 15 RPM limit
                             time.sleep(2)
                         except Exception as img_e:
@@ -118,14 +122,20 @@ async def upload_policy(
         all_chunks = paragraphs + images_descriptions
         
         try:
-            for p in all_chunks:
-                # Use Gemini Embeddings
-                emb_res = client.models.embed_content(
+            import concurrent.futures
+            
+            def embed_chunk(p):
+                res = client.models.embed_content(
                     model="gemini-embedding-2",
                     contents=p,
                     config={"output_dimensionality": 384}
                 )
-                emb = emb_res.embeddings[0].values
+                return p, res.embeddings[0].values
+                
+            with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+                results = executor.map(embed_chunk, all_chunks)
+                
+            for p, emb in results:
                 clause = PolicyClause(
                     policy_id=policy_id,
                     clause_text=p,
