@@ -128,7 +128,7 @@ async def upload_policy(
                 res = client.models.embed_content(
                     model="gemini-embedding-2",
                     contents=p,
-                    config={"output_dimensionality": 384}
+                    config={"output_dimensionality": 768}
                 )
                 return p, res.embeddings[0].values
                 
@@ -142,10 +142,10 @@ async def upload_policy(
                     embedding=emb
                 )
                 db.add(clause)
+            db.commit()
         except Exception as e:
+            db.rollback()
             print(f"Failed to embed chunks: {e}")
-            
-    db.commit()
     
     # 3. RAG-Based Structured Data Extraction using Gemini
     try:
@@ -160,7 +160,7 @@ async def upload_policy(
             emb_res = client.models.embed_content(
                 model="gemini-embedding-2",
                 contents=search_query,
-                config={"output_dimensionality": 384}
+                config={"output_dimensionality": 768}
             )
             q_emb = emb_res.embeddings[0].values
         

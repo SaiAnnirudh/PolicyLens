@@ -30,7 +30,7 @@ def ask_question(request: QuestionRequest, db: Session = Depends(get_db)):
     emb_res = client.models.embed_content(
         model="gemini-embedding-2",
         contents=request.question,
-        config={"output_dimensionality": 384}
+        config={"output_dimensionality": 768}
     )
     question_embedding = emb_res.embeddings[0].values
     
