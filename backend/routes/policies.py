@@ -123,7 +123,7 @@ async def upload_policy(
                 emb_res = client.models.embed_content(
                     model="gemini-embedding-2",
                     contents=p,
-                    config={"output_dimensionality": 768}
+                    config={"output_dimensionality": 384}
                 )
                 emb = emb_res.embeddings[0].values
                 clause = PolicyClause(
@@ -150,7 +150,7 @@ async def upload_policy(
             emb_res = client.models.embed_content(
                 model="gemini-embedding-2",
                 contents=search_query,
-                config={"output_dimensionality": 768}
+                config={"output_dimensionality": 384}
             )
             q_emb = emb_res.embeddings[0].values
         
