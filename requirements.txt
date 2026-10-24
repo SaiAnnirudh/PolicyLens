@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+psycopg2-binary
+pgvector
+pydantic
+pydantic-settings
+python-jose[cryptography]
+bcrypt
+python-multipart
+pdfplumber
+pymupdf
+google-genai
+python-dotenv
